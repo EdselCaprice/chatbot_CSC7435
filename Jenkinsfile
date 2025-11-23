@@ -15,8 +15,8 @@ pipeline {
                 echo "Testing.."
                 sh '''
                 echo "Running backend tests..."
-                cd backend
-                python test.py
+                docker-compose run --rm backend python test.py
+
                 '''
             }
         }
