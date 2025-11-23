@@ -7,6 +7,7 @@ pipeline {
                 echo "Building.."
                 sh '''
                 echo "doing build sttuff..."
+                docker compose build
                 '''
             }
         }
@@ -15,7 +16,7 @@ pipeline {
                 echo "Testing.."
                 sh '''
                 echo "Running backend tests..."
-                docker-compose run --rm backend python test.py
+                docker compose run --rm backend python test.py
 
                 '''
             }
@@ -23,8 +24,8 @@ pipeline {
         stage('Deliver') {
             steps {
                 echo 'Deploying with Docker Compose..'
-                sh 'docker-compose down'
-                sh 'docker-compose up --build -d'
+                sh 'docker compose down'
+                sh 'docker compose up --build -d'
                 sh 'docker system prune -f'
             }
         }
