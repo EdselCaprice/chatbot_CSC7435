@@ -113,7 +113,6 @@ cython_debug/
 
 # Docker
 Dockerfile
-docker-compose.yml
 .dockerignore
 docker.md
 nginx.conf

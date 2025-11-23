@@ -14,16 +14,18 @@ pipeline {
             steps {
                 echo "Testing.."
                 sh '''
-                echo "doing test stuff.."
+                echo "Running backend tests..."
+                cd backend
+                python test.py
                 '''
             }
         }
         stage('Deliver') {
             steps {
-                echo 'Deliver..'
-                    sh '''
-                    echo "doing delivery stuff.."
-                    '''
+                echo 'Deploying with Docker Compose..'
+                sh 'docker-compose down'
+                sh 'docker-compose up --build -d'
+                sh 'docker system prune -f'
             }
         }
     }
