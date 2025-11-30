@@ -1,13 +1,22 @@
 pipeline {
     agent any
-    
+    environment {
+        OPENAI_API_KEY = credentials('openai-api-key')
+        SECRET_KEY = credentials('flask-secret-key')
+        PINECONE_API_KEY = credentials('pinecone-api-key')
+    }
     stages {
         stage('Build') {
             steps {
                 echo "Building.."
                 sh '''
-                echo "doing build sttuff..."
-                docker compose build
+                    # Create .env file from Jenkins credentials
+                    cat > backend/.env << EOF
+                    OPENAI_API_KEY=${OPENAI_API_KEY}
+                    SECRET_KEY=${SECRET_KEY}
+                    PINECONE_API_KEY=${PINECONE_API_KEY}
+                    EOF
+                    docker compose build
                 '''
             }
         }
