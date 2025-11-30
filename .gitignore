@@ -112,10 +112,8 @@ dmypy.json
 cython_debug/
 
 # Docker
-Dockerfile
 .dockerignore
 docker.md
-nginx.conf
 
 # Backend specific
 backend/chatbotv1.py
