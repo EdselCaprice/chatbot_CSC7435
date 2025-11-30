@@ -5,29 +5,37 @@ pipeline {
         stage('Build') {
             steps {
                 echo "Building.."
-                sh '''
-                echo "doing build sttuff..."
-                docker compose build
-                '''
+                bat 'docker compose build'
             }
         }
+        
         stage('Test') {
             steps {
-                echo "Testing.."
-                sh '''
                 echo "Running backend tests..."
-                docker compose run --rm backend python test.py
-
-                '''
+                bat 'docker compose run --rm backend python test.py'
             }
         }
+        
         stage('Deliver') {
             steps {
                 echo 'Deploying with Docker Compose..'
-                sh 'docker compose down'
-                sh 'docker compose up --build -d'
-                sh 'docker system prune -f'
+                bat 'docker compose down || exit 0'
+                bat 'docker compose up --build -d'
+                bat 'docker system prune -f'
             }
+        }
+    }
+    
+    post {
+        success {
+            echo '========================================='
+            echo 'Pipeline completed successfully!'
+            echo 'Frontend: http://localhost:3000'
+            echo 'Backend:  http://localhost:5000'
+            echo '========================================='
+        }
+        failure {
+            echo 'Pipeline failed!'
         }
     }
 }
