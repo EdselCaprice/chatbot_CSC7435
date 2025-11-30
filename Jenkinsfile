@@ -12,10 +12,10 @@ pipeline {
                 sh '''
                     # Create .env file from Jenkins credentials
                     cat > backend/.env << EOF
-                    OPENAI_API_KEY=${OPENAI_API_KEY}
-                    SECRET_KEY=${SECRET_KEY}
-                    PINECONE_API_KEY=${PINECONE_API_KEY}
-                    EOF
+OPENAI_API_KEY=${OPENAI_API_KEY}
+SECRET_KEY=${SECRET_KEY}
+PINECONE_API_KEY=${PINECONE_API_KEY}
+EOF
                     docker compose build
                 '''
             }
@@ -33,7 +33,7 @@ pipeline {
         stage('Deliver') {
             steps {
                 echo 'Deploying with Docker Compose..'
-                sh 'docker compose down'
+                sh 'docker compose down || true'
                 sh 'docker compose up --build -d'
                 sh 'docker system prune -f'
             }
