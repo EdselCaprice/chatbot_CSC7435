@@ -39,4 +39,24 @@ EOF
             }
         }
     }
+     post {
+        success {
+            echo '========================================='
+            echo 'Pipeline completed successfully!'
+            echo 'Frontend: http://localhost:3000'
+            echo 'Backend:  http://localhost:5000'
+            echo '========================================='
+            slackSend(
+                color: 'good',
+                message: "✅ SUCCESS: Pipeline '${env.JOB_NAME}' [${env.BUILD_NUMBER}] completed successfully.\nFrontend: http://localhost:3000\nBackend: http://localhost:5000"
+            )
+        }
+        failure {
+            echo 'Pipeline failed!'
+            slackSend(
+                color: 'danger',
+                message: "❌ FAILURE: Pipeline '${env.JOB_NAME}' [${env.BUILD_NUMBER}] failed!\nCheck console: ${env.BUILD_URL}console"
+            )
+        }
+    }
 }
