@@ -42,6 +42,12 @@ EOF
     }
      post {
         success {
+            echo '========================================='
+            echo 'Pipeline completed successfully!'
+            echo 'Frontend: http://localhost:3000'
+            echo 'Backend:  http://localhost:5000'
+            echo '========================================='
+            
             slackSend(
                 teamDomain: 'jenkins-alertsglobal',
                 channel: '#all-jenkins-alerts',
