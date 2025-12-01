@@ -4,6 +4,7 @@ pipeline {
         OPENAI_API_KEY = credentials('openai-api-key')
         SECRET_KEY = credentials('flask-secret-key')
         PINECONE_API_KEY = credentials('pinecone-api-key')
+        SLACK_TOKEN = credentials('slack-token')
     }
     stages {
         stage('Build') {
@@ -41,21 +42,41 @@ EOF
     }
      post {
         success {
-            echo '========================================='
-            echo 'Pipeline completed successfully!'
-            echo 'Frontend: http://localhost:3000'
-            echo 'Backend:  http://localhost:5000'
-            echo '========================================='
             slackSend(
+                teamDomain: 'jenkins-alertsglobal',
+                channel: '#all-jenkins-alerts',
                 color: 'good',
-                message: "✅ SUCCESS: Pipeline '${env.JOB_NAME}' [${env.BUILD_NUMBER}] completed successfully.\nFrontend: http://localhost:3000\nBackend: http://localhost:5000"
+                message: "✔ SUCCESS: Job '${env.JOB_NAME}' build #${env.BUILD_NUMBER}",
+                tokenCredentialId: 'slack-token',
+                botUser: true,
+                username: 'Jenkins',
+                iconEmoji: ':jenkins:'
             )
         }
+
         failure {
-            echo 'Pipeline failed!'
             slackSend(
+                teamDomain: 'jenkins-alertsglobal',
+                channel: '#all-jenkins-alerts',
                 color: 'danger',
-                message: "❌ FAILURE: Pipeline '${env.JOB_NAME}' [${env.BUILD_NUMBER}] failed!\nCheck console: ${env.BUILD_URL}console"
+                message: "❌ FAILED: Job '${env.JOB_NAME}' build #${env.BUILD_NUMBER}",
+                tokenCredentialId: 'slack-token',
+                botUser: true,
+                username: 'Jenkins',
+                iconEmoji: ':jenkins:'
+            )
+        }
+
+        unstable {
+            slackSend(
+                teamDomain: 'jenkins-alertsglobal',
+                channel: '#all-jenkins-alerts',
+                color: 'warning',
+                message: "⚠️ UNSTABLE: Job '${env.JOB_NAME}' build #${env.BUILD_NUMBER}",
+                tokenCredentialId: 'slack-token',
+                botUser: true,
+                username: 'Jenkins',
+                iconEmoji: ':jenkins:'
             )
         }
     }
