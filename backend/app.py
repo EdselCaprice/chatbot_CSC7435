@@ -6,6 +6,7 @@ from flask_cors import CORS
 from openai import OpenAI
 from pinecone import Pinecone, ServerlessSpec
 import numpy as np
+import research
 
 app = Flask(__name__)
 CORS(app)
@@ -47,37 +48,89 @@ except:
 def get_cfp_research_data():
     '''retrieve research data related to NOL carryforward periods previously saved to Smartsheets repository'''
     docs = []
-    
+    print("Reformatting CFP data...")
+    for state, data in research.import_cfp_from_ss().items():
+        for year, cfp in data.items():
+            if type(cfp) is not float and cfp.lower() == "unlimited":
+                docs.append(f"{state}'s {year} NOL carryforward period is {cfp}. {state}'s NOL utilization limitation is 80% of state taxable income.")
+            else:
+                docs.append(f"{state}'s {year} NOL carryforward period is {cfp}")
     return docs
 
 def get_tax_rate_data():
     '''retrieve research data related to tax rates previously saved to Smartsheets repository'''
     docs = []
+    print("Reformatting tax rate data...")
+    compliance, current, deferred = research.import_tax_rates_from_ss('2022')
+    for state, rate in compliance.items():
+        if type(rate) == float:
+            docs.append(f"{state}'s 2022 or compliance tax rate is {rate * 100}%")
+        else:
+            docs.append(f"{state}'s 2022 or compliance tax rate is {rate}")
+    for state, rate in current.items():
+        if type(rate) == float:
+            docs.append(f"{state}'s 2023 or current tax rate is {rate * 100}%")
+        else:
+            docs.append(f"{state}'s 2023 or current tax rate is {rate}")
+    for state, rate in deferred.items():
+        if type(rate) == float:
+            docs.append(f"{state}'s deferred or future tax rate is {rate * 100}%")
+        else:
+            docs.append(f"{state}'s deferred or future tax rate is {rate}")
     return docs
 
 def get_methodology_data():
     '''retrieve research data related to apportionment methodologies previously saved to Smartsheets repository'''
     docs = []
+    methodologies = research.import_smartsheets_methodologies('2022')
+    logic = {
+        'compliance': '2022',
+        'current': '2023',
+        'deferred': 'deferred'
+    }
+    for state in methodologies:
+        docs.append(f"{state['state']}'s {logic[state['year']]} apportionment methodology is {state['method']}")
     return docs
 
 def get_pre_post_nol_data():
     '''retrieve research data related to pre/post NOL periods previously saved to Smartsheets repository'''
     docs = []
+    print("Reformatting pre/post NOL data...")
+    pre_post = research.import_pre_post_nol_from_ss()
+    for state, decision in pre_post.items():
+        docs.append(f"{state}'s net operating losses are utilized on a {decision} apportioned basis")
     return docs
 
 def get_nexus_thresholds_data():
     '''retrieve research data related to state nexus thresholds previously saved to Smartsheets repository'''
     docs = []
+    print("Reformatting nexus thresholds data...")
+    thresholds = research.import_nexus_thresholds_from_ss()
+    for state, data in thresholds.items():
+        docs.append(f"{state}'s economic nexus threshold is {data['dollar_threshold']} dollars, {data['transaction_threshold']} transactions. And/Or determination is: {data['and_or']}")
     return docs
 
 def get_exclusion_rates_data():
     '''retrieve research data related to exclusion rates previously saved to Smartsheets repository'''
     docs = []
+    print("Reformatting exclusion rates data...")
+    exclusions = research.import_exclusion_rates_from_ss('2022')
+    for state, data in exclusions.items():
+        for category, rate in data.items():
+            docs.append(f"{state}'s exclusion rate for {category} is {float(rate) * 100}%) of {category} income")
     return docs
 
 def get_limitations_data():
     '''retrieve research data related to NOL utilization limitations previously saved to Smartsheets repository'''
     docs = []
+    print("Reformatting NOL utilization limitations data...")
+    limitations = research.import_limitations_from_ss()
+    for state, data in limitations.items(): 
+        for year, limitation in data.items():
+            if limitation == 1:
+                docs.append(f"{state}'s net operating loss (NOL) utilization limitation for {year}. {state} can utilize an unlimited amount of NOLs")
+            else:
+                docs.append(f"{state}'s net operating loss (NOL) utilization limitation for {year} is {float(limitation) * 100}% of state taxable income")
     return docs
 
 def get_research():
@@ -88,9 +141,24 @@ def get_research():
 def initialize_vector_store():
     """Create embeddings and store them in Pinecone or in-memory"""
     tax_research = get_research()
+    print("Initializing vector store...")
+    
+    # Create embeddings for all research data
+    for idx, doc in enumerate(tax_research):
+        response = openai_client.embeddings.create(
+            input=doc,
+            model="text-embedding-3-large"
+        )
+        embedding = response.data[0].embedding
+        
+        # Store in Pinecone if available
+        if index:
+            index.upsert(vectors=[(f"doc_{idx}", embedding, {"text": doc})])
+    return tax_research
 
-# Initialize Pinecone on startup
-initialize_vector_store()
+# Initialize Pinecone on startup - only needs to be run once. Must have pinecone API key set in environment variables.
+#Comment out or remove after first run to avoid duplicate entries. This would time out in production environment.
+#initialize_vector_store()
 
 def cosine_similarity(vec1, vec2):
     """Calculate cosine similarity between two vectors"""

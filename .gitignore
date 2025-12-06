@@ -113,7 +113,6 @@ cython_debug/
 
 # Docker
 .dockerignore
-docker.md
 
 # Backend specific
 backend/chatbotv1.py
